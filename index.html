@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mistake Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --gold: #F5A623; --gold-bg: rgba(245,166,35,0.12); --gold-border: rgba(245,166,35,0.35);
+  --red: #FF453A; --bg: #242424; --surface: #2E2E2E;
+  --text: #E8E8E8; --muted: #A1A1A6; --border: rgba(255,255,255,0.10);
+}
+html, body { background: #191919; color: var(--text); font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { padding: 12px; }
+.callout { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 14px; }
+.wrap { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.top-row { display: flex; gap: 10px; align-items: stretch; }
+.col-left { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; align-self: stretch; }
+.section-label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.btn-grid { display: grid; grid-template-columns: repeat(3, 140px); gap: 5px; }
+.mistake-wrap { display: flex; flex-direction: column; }
+.mistake-btn {
+  width: 100%; padding: 0 10px; border-radius: 10px; min-height: 42px;
+  border: 1.5px solid var(--border); background: var(--bg); color: var(--text);
+  font-size: 11px; font-weight: 500; font-family: inherit; cursor: pointer;
+  text-align: left; transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  line-height: 1; display: flex; align-items: center; justify-content: space-between; gap: 6px; overflow: hidden;
+}
+.mistake-btn:hover { background: var(--surface); border-color: rgba(255,255,255,0.18); }
+.mistake-btn:active { transform: scale(0.97); }
+.mistake-btn.flash { background: var(--gold); border-color: var(--gold); color: #fff; }
+.mistake-btn.flash .btn-count { color: #fff; }
+.mistake-btn.flash .btn-minus { border-color: rgba(255,255,255,0.5); color: #fff; }
+.mistake-btn.has-count { border-color: var(--gold-border); background: rgba(245,166,35,0.06); }
+.btn-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.has-count .btn-label { font-size: 10px; }
+.btn-count-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.btn-count { font-size: 11px; font-weight: 700; color: var(--gold); }
+.btn-minus {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 1.5px solid var(--gold-border); background: transparent;
+  color: var(--gold); font-size: 14px; font-weight: 400;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  padding: 0; line-height: 1; transition: background 0.15s;
+  font-family: inherit; flex-shrink: 0;
+}
+.btn-minus:hover { background: rgba(245,166,35,0.2); }
+.col-mid { flex: 1; background: var(--surface); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bar-row { display: flex; align-items: center; gap: 8px; transition: opacity 0.3s; }
+.bar-row.zero { opacity: 0.3; }
+.bar-name { font-size: 11px; font-weight: 500; color: var(--muted); width: 105px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { flex: 1; height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; background: #E39820; transition: width 0.4s ease; }
+.bar-cnt { font-size: 11px; font-weight: 600; color: var(--muted); width: 16px; text-align: right; flex-shrink: 0; }
+.bar-cnt.nonzero { color: var(--text); }
+.col-right { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; width: 120px; }
+.stat-card { background: var(--surface); border-radius: 12px; padding: 8px 12px; }
+.stat-card.gold-card { background: var(--gold); }
+.stat-card.gold-card .stat-val { color: #fff; }
+.stat-card.gold-card .stat-lbl { color: rgba(255,255,255,0.7); }
+.stat-val { font-size: 16px; font-weight: 700; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; }
+.stat-val.sm { font-size: 11px; padding-top: 2px; font-weight: 600; }
+.stat-val.gold { color: var(--gold); }
+.stat-lbl { font-size: 9px; color: var(--muted); margin-top: 3px; font-weight: 600; }
+.today-bar { background: var(--surface); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; }
+.today-left { display: flex; flex-direction: column; gap: 2px; }
+.today-num { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; }
+.today-lbl { font-size: 10px; color: var(--muted); font-weight: 500; }
+.settings-wrap { position: relative; }
+.settings-btn { width: 100%; padding: 6px 10px; border-radius: 10px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-size: 10px; font-weight: 500; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: background 0.15s; }
+.settings-btn:hover { background: var(--surface); }
+.settings-btn svg { width: 11px; height: 11px; flex-shrink: 0; }
+.settings-menu { display: none; position: absolute; bottom: calc(100% + 6px); right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 6px; z-index: 20; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.5); min-width: 160px; }
+.settings-menu.show { display: block; }
+.menu-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; font-size: 11px; color: var(--text); cursor: pointer; border: none; background: transparent; width: 100%; font-family: inherit; font-weight: 500; }
+.menu-item:hover { background: var(--surface); }
+.menu-item svg { width: 13px; height: 13px; color: var(--muted); flex-shrink: 0; }
+.menu-item.danger { color: var(--red); }
+.menu-item.danger svg { color: var(--red); }
+.reset-confirm { display: none; padding: 8px 10px 4px; }
+.reset-confirm.show { display: block; }
+.reset-confirm p { font-size: 10px; color: var(--muted); margin-bottom: 8px; line-height: 1.4; }
+.rc-btns { display: flex; gap: 6px; }
+.rc-cancel { padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 10px; font-family: inherit; cursor: pointer; }
+.rc-ok { padding: 4px 10px; border-radius: 20px; border: none; background: var(--red); color: #fff; font-size: 10px; font-family: inherit; cursor: pointer; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="callout">
+<div class="wrap">
+  <div class="today-bar">
+    <div class="today-left">
+      <div class="today-num" id="today-total">0</div>
+      <div class="today-lbl">mistakes today</div>
+    </div>
+  </div>
+  <div class="top-row">
+    <div class="col-left">
+      <div class="section-label">Log mistake</div>
+      <div class="btn-grid" id="btns"></div>
+    </div>
+    <div class="col-mid" id="bars"></div>
+    <div class="col-right">
+      <div class="stat-card gold-card"><div class="stat-val" id="v-month">—</div><div class="stat-lbl">Current month</div></div>
+      <div class="stat-card"><div class="stat-val" id="v-total">0</div><div class="stat-lbl">This month</div></div>
+      <div class="stat-card"><div class="stat-val" id="v-avg">—</div><div class="stat-lbl">Daily avg</div></div>
+      <div class="stat-card"><div class="stat-val sm" id="v-dynamic">—</div><div class="stat-lbl" id="v-dynamic-lbl">Most common</div></div>
+      <div class="settings-wrap">
+        <button class="settings-btn" id="settings-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </button>
+        <div class="settings-menu" id="settings-menu">
+          <button class="menu-item danger" id="reset-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Reset all data
+          </button>
+          <div class="reset-confirm" id="reset-confirm">
+            <p>Are you sure? This cannot be undone.</p>
+            <div class="rc-btns"><button class="rc-cancel" id="rc-cancel">Cancel</button><button class="rc-ok" id="rc-ok">Reset</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const MISTAKES=[{id:'no_plan',label:'No plan'},{id:'revenge_trade',label:'Revenge'},{id:'overtrading',label:'Overtrading'},{id:'moved_sl',label:'Moved SL'},{id:'oversize',label:'Oversize'},{id:'fomo',label:'FOMO'},{id:'early_exit',label:'Early exit'},{id:'late_entry',label:'Late entry'},{id:'broke_even_early',label:'Broke Even Early'},{id:'no_candle_close',label:'No Candle Close'},{id:'early_entry',label:'Early Entry'},{id:'no_htf_inverse',label:'No HTF Inverse'},{id:'gambled',label:'Gambled'},{id:'no_break_even',label:'No Break Even'},{id:'bias_wrong',label:'Bias Wrong'}];
+const KEY='ft_mistakes_final',MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const validIds=new Set(MISTAKES.map(m=>m.id));
+function getNow(){return new Date();}
+function getToday(){return getNow().toISOString().split('T')[0];}
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]');}catch{return[];}}
+function save(d){try{localStorage.setItem(KEY,JSON.stringify(d));}catch{}}
+function sanitize(data){return data.map(e=>({...e,mistakes:e.mistakes.filter(id=>validIds.has(id))})).filter(e=>e.mistakes.length>0);}
+function getTodayEntry(){return load().find(x=>x.date===getToday());}
+function addMistake(id){const data=load();const t=getToday();const e=data.find(x=>x.date===t);if(e)e.mistakes.push(id);else data.push({date:t,mistakes:[id]});save(data);}
+function removeMistake(id){const data=load();const e=data.find(x=>x.date===getToday());if(!e)return;const idx=e.mistakes.lastIndexOf(id);if(idx>-1)e.mistakes.splice(idx,1);if(!e.mistakes.length)data.splice(data.indexOf(e),1);save(data);}
+function getMonthData(month,year){return sanitize(load()).filter(e=>{const d=new Date(e.date);return d.getMonth()===month&&d.getFullYear()===year;});}
+function countByMistake(entries){const counts={};MISTAKES.forEach(m=>counts[m.id]=0);entries.forEach(e=>e.mistakes.forEach(id=>{counts[id]=(counts[id]||0)+1;}));return counts;}
+function getTopMistake(counts){
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(!sorted[0]||sorted[0][1]===0)return null;
+  const topScore=sorted[0][1];
+  const tied=sorted.filter(([,c])=>c===topScore);
+  const names=tied.map(([id])=>MISTAKES.find(m=>m.id===id)?.label||id);
+  return{label:names.join(' & '),tied:tied.length>1};
+}
+function getDaysWithData(entries){return new Set(entries.map(e=>e.date)).size;}
+function render(){
+  const now=getNow();
+  const curMonth=now.getMonth(),curYear=now.getFullYear();
+  const monthData=getMonthData(curMonth,curYear);
+  const countsMonth=countByMistake(monthData);
+  const todayEntry=getTodayEntry();
+  const todayCounts={};MISTAKES.forEach(m=>todayCounts[m.id]=0);
+  if(todayEntry)todayEntry.mistakes.forEach(id=>{todayCounts[id]=(todayCounts[id]||0)+1;});
+  const todayTotal=todayEntry?todayEntry.mistakes.length:0;
+  document.getElementById('today-total').textContent=todayTotal;
+  const btnsEl=document.getElementById('btns');btnsEl.innerHTML='';
+  MISTAKES.forEach(m=>{
+    const count=todayCounts[m.id];
+    const wrap=document.createElement('div');wrap.className='mistake-wrap';
+    const btn=document.createElement('button');btn.className='mistake-btn'+(count>0?' has-count':'');
+    const lbl=document.createElement('span');lbl.className='btn-label';lbl.textContent=m.label;
+    btn.appendChild(lbl);
+    if(count>0){
+      const cw=document.createElement('span');cw.className='btn-count-wrap';
+      const num=document.createElement('span');num.className='btn-count';num.textContent=count;
+      const minus=document.createElement('span');minus.className='btn-minus';minus.setAttribute('role','button');minus.innerHTML='<svg width="8" height="2" viewBox="0 0 8 2" fill="none"><line x1="0" y1="1" x2="8" y2="1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+      minus.onclick=ev=>{ev.stopPropagation();removeMistake(m.id);render();};
+      cw.appendChild(num);cw.appendChild(minus);btn.appendChild(cw);
+    }
+    btn.onclick=ev=>{if(ev.target.closest('.btn-minus'))return;addMistake(m.id);btn.classList.add('flash');setTimeout(()=>btn.classList.remove('flash'),400);render();};
+    wrap.appendChild(btn);
+    btnsEl.appendChild(wrap);
+  });
+  let totalMonth=0;monthData.forEach(e=>totalMonth+=e.mistakes.length);
+  const days=getDaysWithData(monthData);
+  document.getElementById('v-month').textContent=MONTHS[curMonth];
+  document.getElementById('v-total').textContent=totalMonth;
+  document.getElementById('v-avg').textContent=days>0?(totalMonth/days).toFixed(1):'—';
+  const dynVal=document.getElementById('v-dynamic'),dynLbl=document.getElementById('v-dynamic-lbl');
+  const lm=curMonth===0?11:curMonth-1,ly=curMonth===0?curYear-1:curYear;
+  const lmTop=getTopMistake(countByMistake(getMonthData(lm,ly)));
+  if(now.getDate()<=3&&lmTop){dynVal.textContent=lmTop.label;dynLbl.textContent=`${MONTHS[lm]}'s #1`;dynVal.classList.add('gold');}
+  else{const mc=getTopMistake(countsMonth);dynVal.textContent=mc?mc.label:'—';dynLbl.textContent='Most common';dynVal.classList.remove('gold');}
+  const sorted=Object.entries(countsMonth).sort((a,b)=>b[1]-a[1]);
+  const max=sorted[0]?sorted[0][1]:0;
+  const barsEl=document.getElementById('bars');
+  barsEl.innerHTML=sorted.map(([id,c])=>{const m=MISTAKES.find(x=>x.id===id);if(!m)return'';const pct=max>0?Math.round(c/max*100):0;return`<div class="bar-row${c===0?' zero':''}"><span class="bar-name">${m.label}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><span class="bar-cnt${c>0?' nonzero':''}">${c>0?c:''}</span></div>`;}).join('');
+}
+const settingsBtn=document.getElementById('settings-btn'),settingsMenu=document.getElementById('settings-menu'),resetBtn=document.getElementById('reset-btn'),resetConfirm=document.getElementById('reset-confirm');
+settingsBtn.onclick=e=>{e.stopPropagation();settingsMenu.classList.toggle('show');resetConfirm.classList.remove('show');resetBtn.style.display='';};
+document.addEventListener('click',()=>{settingsMenu.classList.remove('show');resetConfirm.classList.remove('show');resetBtn.style.display='';});
+settingsMenu.addEventListener('click',e=>e.stopPropagation());
+resetBtn.onclick=e=>{e.stopPropagation();resetConfirm.classList.add('show');resetBtn.style.display='none';};
+document.getElementById('rc-cancel').onclick=e=>{e.stopPropagation();resetConfirm.classList.remove('show');resetBtn.style.display='';};
+document.getElementById('rc-ok').onclick=e=>{e.stopPropagation();localStorage.removeItem(KEY);settingsMenu.classList.remove('show');resetConfirm.classList.remove('show');resetBtn.style.display='';render();};
+render();
+</script>
+</body>
+</html>
